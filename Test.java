@@ -1,10 +1,7 @@
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
-import java.awt.FlowLayout;
 import java.awt.Graphics;
-import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,48 +9,64 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
-import java.util.List;
-import java.util.Random;
-import java.io.FileOutputStream;
+import java.util.Collections;
 import java.io.FileReader;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class Test extends JFrame{
-
 	MojKomponent komponent;
 	Siec siec;
-    Warstwa warstwa;
     Neuron neurony;
 	boolean[][] grid = new boolean[8][8];
     String selectedLetter;
-    int count = 500;
+    int count = 1000;
     private ButtonGroup letterGroup = new ButtonGroup();
     private JRadioButton oButton;
     private JRadioButton dButton;
     private JRadioButton mButton;
 	private ArrayList<UczacaWartosc> uczaceWartosci = new ArrayList<>();
+    private ArrayList<TestowaWartosc> testoweWartosci = new ArrayList<>();
+    private ArrayList<DoZapisuUczacaWartosc> dodajCiagDoZapisu = new ArrayList<>();
     JLabel whiteLabel1 = new JLabel("True");
     JLabel whiteLabel2 = new JLabel("False");
 
 	public class MojKomponent extends JComponent{
 		private static final int CELL_SIZE = 40;
-
-		@Override
-		protected void paintComponent(Graphics g) {
-			super.paintComponent(g);
-
+        private int lastX = -1;
+        private int lastY = -1;
+    
+        public MojKomponent() {
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    addToGrid(e);
+                }
+    
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    lastX = -1;
+                    lastY = -1;
+                }
+            });
+    
+            addMouseMotionListener(new MouseAdapter() {
+                @Override
+                public void mouseDragged(MouseEvent e) {
+                    addToGrid(e);
+                }
+            });
+        }
+    
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+    
             for (int x = 0; x < 8; x++) {
                 for (int y = 0; y < 8; y++) {
                     if (grid[x][y]) {
@@ -65,15 +78,84 @@ public class Test extends JFrame{
                     }
                 }
             }
-		}
-		
+        }
+    
+        private void addToGrid(MouseEvent e) {
+            int x = e.getX() / CELL_SIZE;
+            int y = e.getY() / CELL_SIZE;
+        
+            if (x >= 0 && x < 8 && y >= 0 && y < 8) {
+                if (lastX != -1 && lastY != -1) {
+                    drawLine(lastX, lastY, x, y);
+                }
+        
+                lastX = x;
+                lastY = y;
+                grid[x][y] = true;
+        
+                System.out.println("Added to grid at (" + x + ", " + y + ")");
+                printGridValues();
+                repaint();
+            }
+        }
+
+        private void printGridValues() {
+            System.out.println("Grid Values:");
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    System.out.print(grid[j][i] ? "1" : "0");
+                }
+                System.out.println();
+            }
+        }
+    
+        private void drawLine(int startX, int startY, int endX, int endY) {
+            int dx = Math.abs(endX - startX);
+            int dy = Math.abs(endY - startY);
+            int sx = (startX < endX) ? 1 : -1;
+            int sy = (startY < endY) ? 1 : -1;
+            int err = dx - dy;
+        
+            while (true) {
+                grid[startX][startY] = true;
+                System.out.println("Drawing at: (" + startX + ", " + startY + ")");
+        
+                if (startX == endX && startY == endY) {
+                    break;
+                }
+        
+                int e2 = 2 * err;
+                if (e2 > -dy) {
+                    err = err - dy;
+                    startX = startX + sx;
+                }
+                if (e2 < dx) {
+                    err = err + dx;
+                    startY = startY + sy;
+                }
+            }
+        }
+    
+        public void clearGrid() {
+            for (int x = 0; x < 8; x++) {
+                for (int y = 0; y < 8; y++) {
+                    grid[x][y] = false;
+                }
+            }
+            repaint();
+        }
+    
+        public boolean[][] getGrid() {
+            return grid;
+        }
 	}
 	public Test(String string) {
 		super(string);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setResizable(false);
         Toolkit kit = Toolkit.getDefaultToolkit();
         Dimension d = kit.getScreenSize();
-        int width = 12 * MojKomponent.CELL_SIZE;
+        int width = 14 * MojKomponent.CELL_SIZE;
         int height = 12 * MojKomponent.CELL_SIZE;
         setBounds(d.width / 4, d.height / 4, width, height);
 
@@ -82,27 +164,13 @@ public class Test extends JFrame{
 		add(mainPanel);
 		mainPanel.add(createControlPanel());
 		mainPanel.add(komponent = new MojKomponent());
-        setMouseListener();
+		
         setVisible(true);
-		/*
-		 //1 warstwa 1 neuron
-		int []tab=new int [1];
-		tab[0]=1;
-		siec=new Siec(2,1,tab);
-		*/
-		
-		 //3 warstwy
-		
-		int [] tab=new int [3];
-		tab[0]=64; tab[1]=8; tab[2]=3;
-		siec=new Siec(2,3,tab);
-		
-		/*
-		 //2 warstwy
+
 		int [] tab=new int [2];
-		tab[0]=10; tab[1]=1;
-		siec=new Siec(2,2,tab);
-		*/
+		tab[0]=25; tab[1]=3;
+		siec=new Siec(64,2,tab);
+		
 		setVisible(true);
 	}
 
@@ -112,11 +180,12 @@ public class Test extends JFrame{
         controlJPanel.setBorder(new EmptyBorder(0, 10, 0, 10));
     
         ButtonGroup letterGroup = new ButtonGroup();
+
         JRadioButton oButton = new JRadioButton("O");
         oButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                selectedLetter = "100";
+                selectedLetter = "1";
             }
         });
     
@@ -124,7 +193,7 @@ public class Test extends JFrame{
         dButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                selectedLetter = "010";
+                selectedLetter = "2";
             }
         });
     
@@ -132,7 +201,7 @@ public class Test extends JFrame{
         mButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                selectedLetter = "001";
+                selectedLetter = "3";
             }
         });
     
@@ -148,11 +217,27 @@ public class Test extends JFrame{
         clearButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                clearGrid();
+                komponent.clearGrid();
+            }
+        });
+
+        JButton addCiagButton = new JButton("Dodaj Ciag do Pliku");
+        addCiagButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e){
+                dodajCiag();
+            }
+        });
+
+        JButton saveToFileButton = new JButton("Zapisz Plik z Ciągami");
+        saveToFileButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e){
+                zapiszDoPliku("uczaceWartosci.txt");
             }
         });
     
-                                                                    //TRENOWANIE
+                                                            /// TRENOWANIE ///
 
         JButton trainButton = new JButton("Ucz");
         trainButton.addActionListener(new ActionListener() {
@@ -162,7 +247,7 @@ public class Test extends JFrame{
             }
         });
 
-                                                                    //TESTOWANIE
+                                                            /// TESTOWANIE ///
     
         JButton testButton = new JButton("Test");
         testButton.addActionListener(new ActionListener() {
@@ -201,21 +286,29 @@ public class Test extends JFrame{
             }
         });
 
-                                                                    //KONIEC
-
-        JButton readToFileButton = new JButton("CU");
-        readToFileButton.addActionListener(new ActionListener() {
+        JButton readToFileCUButton = new JButton("Wczytaj CU do Programu");
+        readToFileCUButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 dodajCiagUczacyZPliku();
+            }
+        });
+
+        JButton readToFileCTButton = new JButton("Wczytaj CT do Programu");
+        readToFileCTButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dodajCiagTestowyZPliku();
             }
         });
     
         controlJPanel.add(clearButton);
         controlJPanel.add(trainButton);
         controlJPanel.add(testButton);
-        controlJPanel.add(readToFileButton);
-
+        controlJPanel.add(addCiagButton);
+        controlJPanel.add(saveToFileButton);
+        controlJPanel.add(readToFileCUButton);
+        controlJPanel.add(readToFileCTButton);
                
         whiteLabel1.setOpaque(true);
         whiteLabel1.setBackground(Color.WHITE);
@@ -227,6 +320,20 @@ public class Test extends JFrame{
     
         controlJPanel.add(whiteLabel1);
         controlJPanel.add(whiteLabel2);
+
+                                                    /// ROZPOZNAWANIE ///
+
+        JButton recognizeButton = new JButton("Rozpoznaj");
+        recognizeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                recognize();
+            }
+        });
+
+        
+        controlJPanel.add(recognizeButton);
+
     
         return controlJPanel;
     }
@@ -234,56 +341,171 @@ public class Test extends JFrame{
                                                     /// TRENOWANIE ///
 
     public void train(int count) {
+		double sumaWynikow;
+        double SumaWynikow = 0;
+		int j = 0;
+		double[] wyniki = new double[3];
+
         if (uczaceWartosci.isEmpty()) {
             JOptionPane.showMessageDialog(Test.this, "Brak ciągów uczących. Dodaj co najmniej jeden ciąg uczący przed trenowaniem.", "Brak danych uczących", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        Random random = new Random();
+        Collections.shuffle(uczaceWartosci);
+        
+        while(SumaWynikow < 2.7){
 
-        for (long i = 0; i < count; i++) {
-           
-            UczacaWartosc uczacaWartosc = uczaceWartosci.get(random.nextInt(uczaceWartosci.size()));
-            
-            double[] input = uczacaWartosc.getInputExamples();
-            double[] oneHot = uczacaWartosc.getOneHot();
-
-            siec.ucz(input, oneHot, 0.1, count);
+            for(int i=0; i<count; i++)
+            {
+                sumaWynikow = 0;
+                for(UczacaWartosc uczacaWartosc : uczaceWartosci)
+                {
+                    ArrayList<Double> input = uczacaWartosc.getInputExamples();
+                    int oneHot = uczacaWartosc.getOneHot();
+                    double [] wynik=siec.trenuj(input, oneHot);
+                    sumaWynikow = wynik[0] + wynik[1] + wynik[2];
+                    SumaWynikow = sumaWynikow;
+                    wyniki = wynik;
+                } 
+					if(sumaWynikow > 2.7){
+						break; 
+                    }        
+            }
+            j++;
+    
+            if(SumaWynikow > 2.7){
+                System.out.println(j + " : " + wyniki[0] + ":" + wyniki[1] + ":" + wyniki[2]);
+                break;
+            }
+			int [] tab=new int [2];
+			tab[0]=25; tab[1]=3;
+			siec=new Siec(64,2,tab);
         }
 
-        JOptionPane.showMessageDialog(Test.this, "Uczenie zakończone.", "Uczenie", JOptionPane.INFORMATION_MESSAGE);
     }
 
                                                     /// TESTOWANIE ///
 
     public void test() {
-        if (selectedLetter == null) {
-            JOptionPane.showMessageDialog(Test.this, "Najpierw wybierz literę do testowania.", "Brak wybranej litery", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        
-    
-        // Wyświetl wynik testu
-        System.out.println("Otrzymany wynik: ");
 
-        // if () {
-        //     whiteLabel1.setBackground(Color.GREEN);
-        //     whiteLabel2.setBackground(Color.WHITE);
-        // } else {
-        //     whiteLabel1.setBackground(Color.WHITE);
-        //     whiteLabel2.setBackground(Color.RED);
-        // }
+        for(TestowaWartosc testowaWartosc : testoweWartosci){
+            ArrayList<Double> input = testowaWartosc.getInputExamples();
+            int oneHote = testowaWartosc.getOneHot();
+            
+            double [] wejscie;
+            double [] wynik;
+            
+            wejscie = new double[input.size()];
+            for(int i=0; i<input.size(); i++)
+            {
+                wejscie[i]=input.get(i);
+            }
+
+            wynik = siec.oblicz_wyjscie(wejscie);
+
+            if(wynik[0] > 0.8){System.out.println(oneHote + "LITERA O");} 
+            else if(wynik[1] > 0.8){System.out.println(oneHote + "LITERA D");}
+            else if(wynik[2] > 0.8){System.out.println(oneHote + "LITERA M");}
+            else{System.out.println(oneHote + "ZADNA Z LITER");}
+        }
+    }
+
+                                                /// ROZPOZNAWANIE ///
+
+    public void recognize(){
+        double[] wejscie;
+        double[] wynik;
+
+        String binaryString = convertGridToBinaryString();
+        System.out.println(binaryString);
+        ArrayList<Double> recognizeInput = convertBinaryStringToDoubleArray(binaryString);
+        
+        wejscie = new double[recognizeInput.size()];
+        for(int i=0; i<recognizeInput.size(); i++)
+    	{
+    		wejscie[i] = recognizeInput.get(i);
+    	}
+
+    	wynik = siec.oblicz_wyjscie(wejscie);
+
+        if (wynik[0] > 0.8 && wynik[0] > wynik[1] && wynik[0] > wynik[2]) {
+            whiteLabel1.setBackground(Color.GREEN);
+            whiteLabel1.setText("O");
+            whiteLabel2.setBackground(Color.WHITE);
+        } else if (wynik[1] > 0.8 && wynik[1] > wynik[0] && wynik[1] > wynik[0]) {
+            whiteLabel1.setBackground(Color.GREEN);
+            whiteLabel1.setText("D");
+            whiteLabel2.setBackground(Color.WHITE);
+        } else if (wynik[2] > 0.8 && wynik[2] > wynik[0] && wynik[2] > wynik[1]) {
+            whiteLabel1.setBackground(Color.GREEN);
+            whiteLabel1.setText("M");
+            whiteLabel2.setBackground(Color.WHITE);
+        } else {
+            whiteLabel1.setBackground(Color.WHITE);
+            whiteLabel2.setBackground(Color.RED);
+        }
 
         whiteLabel1.setOpaque(true);
         whiteLabel2.setOpaque(true);
 
         whiteLabel1.repaint();
         whiteLabel2.repaint();
+
+    	String st = ((wynik[0]>0.7)? "TO ZNAK O":"TO NIE ZNAK O") + "\nWynik: " + String.valueOf(wynik[0]) +
+    			"\n" + ((wynik[1]>0.7)? "TO ZNAK D":"TO NIE ZNAK D") + "\nWynik: " + String.valueOf(wynik[1]) +
+    			"\n" + ((wynik[2]>0.7)? "TO ZNAK M":"TO NIE ZNAK M") + "\nWynik: " + String.valueOf(wynik[2]);
+    	JOptionPane.showMessageDialog(null, st);
     }
+   
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~ METODY ~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+
+    private void dodajCiag() {
+        String wybranaLitera = setSelectedLetterFromRadioButton();
+        double[] output = convertSelectedLetterToDoubleArray(wybranaLitera);
+
+        double[] input = new double[64];
+    
+        String binaryString = convertGridToBinaryString();
+        input = convertBinaryStringToDouble(binaryString);
+        System.out.println(input[0]);
+    
+        String inputBinaryString = convertDoubleArrayToBinaryString(input);
+        String outputBinaryString = convertDoubleArrayToBinaryString(output);
+    
+        DoZapisuUczacaWartosc doZapisuUczacaWartosc = new DoZapisuUczacaWartosc(inputBinaryString, outputBinaryString);
+        dodajCiagDoZapisu.add(doZapisuUczacaWartosc);
+    }
+    
+
+    private void zapiszDoPliku(String nazwaPliku) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(nazwaPliku))) {
+            for (DoZapisuUczacaWartosc dozapisuuczacaWartosc : dodajCiagDoZapisu) {
+                writer.write(dozapisuuczacaWartosc.getInput() + ":" + dozapisuuczacaWartosc.getOutput());
+                writer.newLine();
+            }
+            JOptionPane.showMessageDialog(this, "Dane uczące zostały zapisane do pliku " + nazwaPliku, "Zapisano do pliku", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Błąd zapisu danych uczących do pliku.", "Błąd zapisu", JOptionPane.ERROR_MESSAGE);
+        }
+    } 
 
     private void dodajCiagUczacyZPliku() {
-        String filePath = "C:/xampp/htdocs/projekty/MLP/MLP/ciagi_uczace.txt";
+        String currentDirectory = System.getProperty("user.dir");
+    
+        JFileChooser fileChooser = new JFileChooser(currentDirectory);
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("Text files (*.txt)", "txt");
+        fileChooser.setFileFilter(filter);
+
+        System.out.println("Wybierz Plik CU");
+
+        int result = fileChooser.showOpenDialog(null);
+
+        if (result == JFileChooser.APPROVE_OPTION) {
+            String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+
+        int nr = 0;
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
@@ -292,111 +514,154 @@ public class Test extends JFrame{
                 if (!line.isEmpty()) {
                     String[] parts = line.split(":");
                     String binarySequence = parts[0].trim();
-                    String[] oneHotArray = parts[1].trim().split("\\s+");  // Zakładam, że one-hot jest oddzielone spacją
-
-                    // Konwertuje ciąg zer i jedynek na tablicę double
-                    double[] binaryArray = new double[binarySequence.length()];
+                    String oneHotArray = parts[1].trim();  
+    
+                    ArrayList<Double> binaryArrayList = new ArrayList<>();
                     for (int i = 0; i < binarySequence.length(); i++) {
-                        binaryArray[i] = Double.parseDouble(String.valueOf(binarySequence.charAt(i)));
+                        binaryArrayList.add(Double.parseDouble(String.valueOf(binarySequence.charAt(i))));
                     }
-
-                    // Konwertuje one-hot na tablicę double
-                    double[] oneHot = Arrays.stream(oneHotArray)
-                            .mapToDouble(Double::parseDouble)
-                            .toArray();
-
-                    // Dodaje do listy przykładów
-                    uczaceWartosci.add(new UczacaWartosc(binaryArray, oneHot));
-
-                    System.out.println("-------------------------------------");
-
-                    UczacaWartosc firstTrainingExample = uczaceWartosci.get(0);
-
-                    // Pobieranie wartości z pierwszej pary uczącej
-                    double[] oneExample = firstTrainingExample.getInputExamples();
-                    double[] oneExample1 = firstTrainingExample.getOneHot();
-
-                    // Wyświetlanie wartości
-                    System.out.println("Binary Array: " + Arrays.toString(oneExample));
-                    System.out.println("One-Hot Array: " + Arrays.toString(oneExample1));
+                    
+                    int oneHotArrayList = Integer.parseInt(String.valueOf(oneHotArray));
+  
+                    uczaceWartosci.add(new UczacaWartosc(binaryArrayList, oneHotArrayList));
+    
+                    System.out.println("Pobrano CU nr: " + nr++);
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+    } 
 
-    private String convertGridToBinaryString() {
-        StringBuilder binaryString = new StringBuilder();
+    private void dodajCiagTestowyZPliku() {
+        String currentDirectory = System.getProperty("user.dir");
     
-        for (int y = 0; y < 8; y++) {
-            for (int x = 0; x < 8; x++) {
-                binaryString.append(grid[x][y] ? "1" : "0");
+        JFileChooser fileChooser = new JFileChooser(currentDirectory);
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("Text files (*.txt)", "txt");
+        fileChooser.setFileFilter(filter);
+
+        System.out.println("Wybierz Plik CT");
+
+        int result = fileChooser.showOpenDialog(null);
+
+        if (result == JFileChooser.APPROVE_OPTION) {
+            String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+        
+        int nr = 0;
+
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty()) {
+                    String[] parts = line.split(":");
+                    String binarySequence = parts[0].trim();
+                    String oneHotArray = parts[1].trim();  
+    
+                    ArrayList<Double> binaryArrayList = new ArrayList<>();
+                    for (int i = 0; i < binarySequence.length(); i++) {
+                        binaryArrayList.add(Double.parseDouble(String.valueOf(binarySequence.charAt(i))));
+                    }
+                    
+                    int oneHotArrayList = Integer.parseInt(String.valueOf(oneHotArray));
+  
+                    testoweWartosci.add(new TestowaWartosc(binaryArrayList, oneHotArrayList));
+    
+                    System.out.println("Pobrano CT nr: " + nr++);
+                }
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    } 
+
+    private String setSelectedLetterFromRadioButton() {
+        JRadioButton selectedRadioButton = null;
+    
+            for (Enumeration<AbstractButton> buttons = letterGroup.getElements(); buttons.hasMoreElements();) {
+                AbstractButton button = buttons.nextElement();
+    
+                if (button.isSelected()) {
+                    selectedRadioButton = (JRadioButton) button;
+                    break;
+                }
+            }
+    
+            if (selectedRadioButton != null) {
+                if (selectedRadioButton == oButton) {
+                    selectedLetter = "1";
+                } else if (selectedRadioButton == dButton) {
+                    selectedLetter = "2";
+                } else if (selectedRadioButton == mButton) {
+                    selectedLetter = "3";
+                }
+            }
+    
+            return selectedLetter;
         }
 
+    private String convertDoubleArrayToBinaryString(double[] array) {
+        StringBuilder binaryString = new StringBuilder();
+        for (double value : array) {
+            binaryString.append((int) value);
+        }
         return binaryString.toString();
     }
 
-    private String setSelectedLetterFromRadioButton() {
-    JRadioButton selectedRadioButton = null;
-
-        for (Enumeration<AbstractButton> buttons = letterGroup.getElements(); buttons.hasMoreElements();) {
-            AbstractButton button = buttons.nextElement();
-
-            if (button.isSelected()) {
-                selectedRadioButton = (JRadioButton) button;
-                break;
+    public double[] convertSelectedLetterToDoubleArray(String selectedLetter) {
+        double[] result = new double[selectedLetter.length()];
+    
+        for (int i = 0; i < selectedLetter.length(); i++) {
+            char c = selectedLetter.charAt(i);
+            if(c == '1'){
+                result[i] = 1.0;
+            } else if (c == '2'){
+                result[i] = 2.0;
+            } else if (c == '3'){
+                result[i] = 3.0;
+            } else{
+                result[i] = 0.0;
             }
         }
+    
+        return result;
+    }
 
-        if (selectedRadioButton != null) {
-            if (selectedRadioButton == oButton) {
-                selectedLetter = "100";
-            } else if (selectedRadioButton == dButton) {
-                selectedLetter = "010";
-            } else if (selectedRadioButton == mButton) {
-                selectedLetter = "001";
-            }
+    public ArrayList<Double> convertBinaryStringToDoubleArray(String binaryStringRecognize) {
+        ArrayList<Double> binaryStringDoubleArray = new ArrayList<>();
+        for (int i = 0; i < binaryStringRecognize.length(); i++) {
+            char c = binaryStringRecognize.charAt(i);
+            double parsedDouble = (double) (int) c; 
+            binaryStringDoubleArray.add(parsedDouble);
         }
-
-        return selectedLetter;
+        return binaryStringDoubleArray;
     }
 
-	private void clearGrid() {
-        for (int x = 0; x < 8; x++) {
-            for (int y = 0; y < 8; y++) {
-                grid[x][y] = false;
-            }
+    private double[] convertBinaryStringToDouble(String binaryStringRecognize) {
+        double[] binaryStringDoubleArray = new double[binaryStringRecognize.length()];
+        for (int i = 0; i < binaryStringRecognize.length(); i++) {
+            char c = binaryStringRecognize.charAt(i);
+            binaryStringDoubleArray[i] = Character.getNumericValue(c);
         }
-        komponent.repaint();
-    }
+        return binaryStringDoubleArray;
+    }    
 
-	private void setMouseListener() {
-        komponent.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                addToGrid(e);
+    private String convertGridToBinaryString() {
+        StringBuilder binaryStrings = new StringBuilder();
+    
+        System.out.println(grid);
+        for (int y = 0; y < 8; y++) {
+            for (int x = 0; x < 8; x++) {
+                binaryStrings.append(grid[x][y] ? "1" : "0");
+                System.out.print(grid[x][y] ? "1" : "0"); 
             }
-        });
-
-        komponent.addMouseMotionListener(new MouseAdapter() {
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                addToGrid(e);
-            }
-        });
-    }
-
-    private void addToGrid(MouseEvent e) {
-        int x = e.getX() / MojKomponent.CELL_SIZE;
-        int y = e.getY() / MojKomponent.CELL_SIZE;
-
-        if (x >= 0 && x < 8 && y >= 0 && y < 8) {
-            grid[x][y] = true;
-            komponent.repaint();
+            System.out.println();
         }
-    }
+    
+        return binaryStrings.toString();
+    }       
 
     public double[][] convertSelectedLetterToDouble(String dates) {
         double[][] result = new double[dates.length()][1];
@@ -410,30 +675,74 @@ public class Test extends JFrame{
     }
 
 	public static void main(String[] args) {
+        
 		EventQueue.invokeLater(new Runnable() {
 			
 			@Override
 			public void run() {
-				new Test("neurony");
+			    new Test("neurony");
 			}
 		});
     }
 }
 
-class UczacaWartosc {
-    private double[] inputExamples;
-    private double[] oneHot;
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~ KLASY ~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
-    public UczacaWartosc(double[] inputExamples, double[] oneHot) {
+class UczacaWartosc {
+    private ArrayList<Double> inputExamples;
+    private int oneHot;
+
+    public UczacaWartosc(ArrayList<Double> inputExamples, int oneHot) {
         this.inputExamples = inputExamples;
         this.oneHot = oneHot;
     }
 
-    public double[] getInputExamples() {
+    public ArrayList<Double> getInputExamples() {
         return inputExamples;
     }
 
-    public double[] getOneHot() {
+    public int getOneHot() {
+        return oneHot;
+    }
+}
+
+class DoZapisuUczacaWartosc {
+        private String input;
+        private String output;
+
+        public DoZapisuUczacaWartosc(String input, String output) {
+            this.input = input;
+            this.output = output;
+        }
+
+        public String getInput() {
+            return input;
+        }
+
+        public String getOutput() {
+            return output;
+        }
+
+        @Override
+        public String toString() {
+            return "Input (binary): " + input + " Output (binary): " + output;
+        }
+    }
+
+class TestowaWartosc {
+    private ArrayList<Double> inputExamples;
+    private int oneHot;
+
+    public TestowaWartosc(ArrayList<Double> inputExamples, int oneHot) {
+        this.inputExamples = inputExamples;
+        this.oneHot = oneHot;
+    }
+
+    public ArrayList<Double> getInputExamples() {
+        return inputExamples;
+    }
+
+    public int getOneHot() {
         return oneHot;
     }
 }

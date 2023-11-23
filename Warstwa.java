@@ -1,7 +1,7 @@
-public class Warstwa{
+
+public class Warstwa {
 	Neuron [] neurony;
 	int liczba_neuronow;
-	
 	public Warstwa(){
 		neurony=null;
 		liczba_neuronow=0;
