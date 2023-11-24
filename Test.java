@@ -25,7 +25,7 @@ public class Test extends JFrame{
     Neuron neurony;
 	boolean[][] grid = new boolean[8][8];
     String selectedLetter;
-    int count = 1000;
+    int count = 200;
     private ButtonGroup letterGroup = new ButtonGroup();
     private JRadioButton oButton;
     private JRadioButton dButton;
@@ -35,23 +35,16 @@ public class Test extends JFrame{
     private ArrayList<DoZapisuUczacaWartosc> dodajCiagDoZapisu = new ArrayList<>();
     JLabel whiteLabel1 = new JLabel("True");
     JLabel whiteLabel2 = new JLabel("False");
+    private String currentLetter;
 
 	public class MojKomponent extends JComponent{
 		private static final int CELL_SIZE = 40;
-        private int lastX = -1;
-        private int lastY = -1;
     
         public MojKomponent() {
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mousePressed(MouseEvent e) {
                     addToGrid(e);
-                }
-    
-                @Override
-                public void mouseReleased(MouseEvent e) {
-                    lastX = -1;
-                    lastY = -1;
                 }
             });
     
@@ -83,20 +76,14 @@ public class Test extends JFrame{
         private void addToGrid(MouseEvent e) {
             int x = e.getX() / CELL_SIZE;
             int y = e.getY() / CELL_SIZE;
-        
+
             if (x >= 0 && x < 8 && y >= 0 && y < 8) {
-                if (lastX != -1 && lastY != -1) {
-                    drawLine(lastX, lastY, x, y);
-                }
-        
-                lastX = x;
-                lastY = y;
                 grid[x][y] = true;
-        
                 System.out.println("Added to grid at (" + x + ", " + y + ")");
                 printGridValues();
                 repaint();
             }
+
         }
 
         private void printGridValues() {
@@ -106,33 +93,6 @@ public class Test extends JFrame{
                     System.out.print(grid[j][i] ? "1" : "0");
                 }
                 System.out.println();
-            }
-        }
-    
-        private void drawLine(int startX, int startY, int endX, int endY) {
-            int dx = Math.abs(endX - startX);
-            int dy = Math.abs(endY - startY);
-            int sx = (startX < endX) ? 1 : -1;
-            int sy = (startY < endY) ? 1 : -1;
-            int err = dx - dy;
-        
-            while (true) {
-                grid[startX][startY] = true;
-                System.out.println("Drawing at: (" + startX + ", " + startY + ")");
-        
-                if (startX == endX && startY == endY) {
-                    break;
-                }
-        
-                int e2 = 2 * err;
-                if (e2 > -dy) {
-                    err = err - dy;
-                    startX = startX + sx;
-                }
-                if (e2 < dx) {
-                    err = err + dx;
-                    startY = startY + sy;
-                }
             }
         }
     
@@ -341,8 +301,10 @@ public class Test extends JFrame{
                                                     /// TRENOWANIE ///
 
     public void train(int count) {
-		double sumaWynikow;
-        double SumaWynikow = 0;
+		double oczekiwanaSkutecznosc=90;
+		double sumaBledow=100;
+		double najmniejszyBlad = sumaBledow;
+		double najwiekszSkutecznosc=0;
 		int j = 0;
 		double[] wyniki = new double[3];
 
@@ -353,27 +315,31 @@ public class Test extends JFrame{
 
         Collections.shuffle(uczaceWartosci);
         
-        while(SumaWynikow < 2.7){
+        while(najwiekszSkutecznosc < oczekiwanaSkutecznosc){
 
             for(int i=0; i<count; i++)
             {
-                sumaWynikow = 0;
+                sumaBledow=0;
                 for(UczacaWartosc uczacaWartosc : uczaceWartosci)
                 {
                     ArrayList<Double> input = uczacaWartosc.getInputExamples();
                     int oneHot = uczacaWartosc.getOneHot();
                     double [] wynik=siec.trenuj(input, oneHot);
-                    sumaWynikow = wynik[0] + wynik[1] + wynik[2];
-                    SumaWynikow = sumaWynikow;
+                    sumaBledow+=wynik[0];
+					sumaBledow+=wynik[1];
+					sumaBledow+=wynik[2];
                     wyniki = wynik;
                 } 
-					if(sumaWynikow > 2.7){
-						break; 
-                    }        
+				najmniejszyBlad = (sumaBledow<najmniejszyBlad)? sumaBledow:najmniejszyBlad;
+				najwiekszSkutecznosc=(100-(najmniejszyBlad/uczaceWartosci.size())*100);
+					if(najwiekszSkutecznosc>oczekiwanaSkutecznosc)
+						break;     
             }
             j++;
     
-            if(SumaWynikow > 2.7){
+            System.out.println("P�tla: " + j + "   " + sumaBledow + "  (" + String.valueOf(najmniejszyBlad)+")" + " Najwieksza skutecznosc: " + najwiekszSkutecznosc);
+
+            if(najwiekszSkutecznosc>oczekiwanaSkutecznosc){
                 System.out.println(j + " : " + wyniki[0] + ":" + wyniki[1] + ":" + wyniki[2]);
                 break;
             }
@@ -403,9 +369,9 @@ public class Test extends JFrame{
 
             wynik = siec.oblicz_wyjscie(wejscie);
 
-            if(wynik[0] > 0.8){System.out.println(oneHote + "LITERA O");} 
-            else if(wynik[1] > 0.8){System.out.println(oneHote + "LITERA D");}
-            else if(wynik[2] > 0.8){System.out.println(oneHote + "LITERA M");}
+            if(wynik[0] > 0.75 && oneHote == 1){System.out.println(oneHote + "LITERA O");} 
+            else if(wynik[1] > 0.75 && oneHote == 2){System.out.println(oneHote + "LITERA D");}
+            else if(wynik[2] > 0.75 && oneHote == 3){System.out.println(oneHote + "LITERA M");}
             else{System.out.println(oneHote + "ZADNA Z LITER");}
         }
     }
@@ -419,6 +385,7 @@ public class Test extends JFrame{
         String binaryString = convertGridToBinaryString();
         System.out.println(binaryString);
         ArrayList<Double> recognizeInput = convertBinaryStringToDoubleArray(binaryString);
+        System.out.println(recognizeInput);
         
         wejscie = new double[recognizeInput.size()];
         for(int i=0; i<recognizeInput.size(); i++)
@@ -428,20 +395,25 @@ public class Test extends JFrame{
 
     	wynik = siec.oblicz_wyjscie(wejscie);
 
-        if (wynik[0] > 0.8 && wynik[0] > wynik[1] && wynik[0] > wynik[2]) {
+        if (wynik[0] > 0.75 && wynik[0] > wynik[1] && wynik[0] > wynik[2]) {
+            currentLetter = "O";
             whiteLabel1.setBackground(Color.GREEN);
-            whiteLabel1.setText("O");
+            whiteLabel1.setText(currentLetter);
             whiteLabel2.setBackground(Color.WHITE);
-        } else if (wynik[1] > 0.8 && wynik[1] > wynik[0] && wynik[1] > wynik[0]) {
+        } else if (wynik[1] > 0.75 && wynik[1] > wynik[0] && wynik[1] > wynik[2]) {
+            currentLetter = "D";
             whiteLabel1.setBackground(Color.GREEN);
-            whiteLabel1.setText("D");
+            whiteLabel1.setText(currentLetter);
             whiteLabel2.setBackground(Color.WHITE);
-        } else if (wynik[2] > 0.8 && wynik[2] > wynik[0] && wynik[2] > wynik[1]) {
+        } else if (wynik[2] > 0.75 && wynik[2] > wynik[0] && wynik[2] > wynik[1]) {
+            currentLetter = "M";
             whiteLabel1.setBackground(Color.GREEN);
-            whiteLabel1.setText("M");
+            whiteLabel1.setText(currentLetter);
             whiteLabel2.setBackground(Color.WHITE);
         } else {
+            currentLetter = "IDK";
             whiteLabel1.setBackground(Color.WHITE);
+            whiteLabel2.setText(currentLetter);
             whiteLabel2.setBackground(Color.RED);
         }
 
@@ -451,10 +423,12 @@ public class Test extends JFrame{
         whiteLabel1.repaint();
         whiteLabel2.repaint();
 
-    	String st = ((wynik[0]>0.7)? "TO ZNAK O":"TO NIE ZNAK O") + "\nWynik: " + String.valueOf(wynik[0]) +
-    			"\n" + ((wynik[1]>0.7)? "TO ZNAK D":"TO NIE ZNAK D") + "\nWynik: " + String.valueOf(wynik[1]) +
-    			"\n" + ((wynik[2]>0.7)? "TO ZNAK M":"TO NIE ZNAK M") + "\nWynik: " + String.valueOf(wynik[2]);
+    	String st = ((wynik[0]>0.75 && wynik[0] > wynik[1] && wynik[0] > wynik[2])? "TO ZNAK O":"TO NIE ZNAK O") + "\nWynik: " + String.valueOf(wynik[0]) +
+    			"\n" + ((wynik[1]>0.75 && wynik[1] > wynik[0] && wynik[1] > wynik[2])? "TO ZNAK D":"TO NIE ZNAK D") + "\nWynik: " + String.valueOf(wynik[1]) +
+    			"\n" + ((wynik[2]>0.75 && wynik[2] > wynik[0] && wynik[2] > wynik[1])? "TO ZNAK M":"TO NIE ZNAK M") + "\nWynik: " + String.valueOf(wynik[2]);
     	JOptionPane.showMessageDialog(null, st);
+
+        resetRecognitionState();
     }
    
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~ METODY ~~~~~~~~~~~~~~~~~~~~~~~~~~//
@@ -633,11 +607,11 @@ public class Test extends JFrame{
         ArrayList<Double> binaryStringDoubleArray = new ArrayList<>();
         for (int i = 0; i < binaryStringRecognize.length(); i++) {
             char c = binaryStringRecognize.charAt(i);
-            double parsedDouble = (double) (int) c; 
+            double parsedDouble = Double.parseDouble(String.valueOf(c));
             binaryStringDoubleArray.add(parsedDouble);
         }
         return binaryStringDoubleArray;
-    }
+    }    
 
     private double[] convertBinaryStringToDouble(String binaryStringRecognize) {
         double[] binaryStringDoubleArray = new double[binaryStringRecognize.length()];
@@ -650,8 +624,7 @@ public class Test extends JFrame{
 
     private String convertGridToBinaryString() {
         StringBuilder binaryStrings = new StringBuilder();
-    
-        System.out.println(grid);
+
         for (int y = 0; y < 8; y++) {
             for (int x = 0; x < 8; x++) {
                 binaryStrings.append(grid[x][y] ? "1" : "0");
@@ -663,15 +636,15 @@ public class Test extends JFrame{
         return binaryStrings.toString();
     }       
 
-    public double[][] convertSelectedLetterToDouble(String dates) {
-        double[][] result = new double[dates.length()][1];
-    
-        for (int i = 0; i < dates.length(); i++) {
-            char date = dates.charAt(i);
-            result[i][0] = (date == '0') ? 0.0 : 1.0;
-        }
-    
-        return result;
+    private void resetRecognitionState() {
+        whiteLabel1.setBackground(Color.WHITE);
+        whiteLabel1.setText("True");
+        whiteLabel2.setBackground(Color.WHITE);
+        whiteLabel2.setText("False");
+        
+        currentLetter = null;
+        komponent.clearGrid();
+        grid = komponent.getGrid();
     }
 
 	public static void main(String[] args) {

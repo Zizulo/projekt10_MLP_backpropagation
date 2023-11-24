@@ -31,30 +31,29 @@ public class Siec {
     	}
 		
     	wynik = oblicz_wyjscie(wejscie);
-
     	
-    	double bladSieciD =  ((output == 1? 1:0)-wynik[0]);
-    	double bladSieciB =  ((output == 2? 1:0)-wynik[1]);
-    	double bladSieci8 =  ((output == 3? 1:0)-wynik[2]);
+    	double bladSieciO =  ((output == 1? 1:0)-wynik[0]);
+    	double bladSieciD =  ((output == 2? 1:0)-wynik[1]);
+    	double bladSieciM =  ((output == 3? 1:0)-wynik[2]);
    
     	for(int i=warstwy.length-1; i>=0; i--)
     	{
     	
     		if(i==warstwy.length-1)
     		{
-    			warstwy[i].neurony[0].blad=bladSieciD;
-    			warstwy[i].neurony[1].blad=bladSieciB;
-    			warstwy[i].neurony[2].blad=bladSieci8;
+    			warstwy[i].neurony[0].blad=bladSieciO;
+    			warstwy[i].neurony[1].blad=bladSieciD;
+    			warstwy[i].neurony[2].blad=bladSieciM;
     		}
     		else
     		{
-    			Neuron ostatniNeuronWyjsciowyD = warstwy[liczba_warstw-1].neurony[0];
-    			Neuron ostatniNeuronWyjsciowyB = warstwy[liczba_warstw-1].neurony[1];
-    			Neuron ostatniNeuronWyjsciowy8 = warstwy[liczba_warstw-1].neurony[2];
+    			Neuron ostatniNeuronWyjsciowyO = warstwy[liczba_warstw-1].neurony[0];
+    			Neuron ostatniNeuronWyjsciowyD = warstwy[liczba_warstw-1].neurony[1];
+    			Neuron ostatniNeuronWyjsciowyM = warstwy[liczba_warstw-1].neurony[2];
     			for(int j=0; j<warstwy[i].liczba_neuronow; j++)
     			{
     				Neuron neuron = warstwy[i].neurony[j];
-    				neuron.blad=(bladSieciD*ostatniNeuronWyjsciowyD.wagi[j])+(bladSieciB*ostatniNeuronWyjsciowyB.wagi[j])+(bladSieci8*ostatniNeuronWyjsciowy8.wagi[j]);
+    				neuron.blad=(bladSieciO*ostatniNeuronWyjsciowyO.wagi[j])+(bladSieciD*ostatniNeuronWyjsciowyD.wagi[j])+(bladSieciM*ostatniNeuronWyjsciowyM.wagi[j]);
     			}
     		}
     	}
@@ -83,9 +82,9 @@ public class Siec {
     			}
     		}
     	}
-    	bledySieci[0]=Math.abs(bladSieciD);
-    	bledySieci[1]=Math.abs(bladSieciB);
-    	bledySieci[2]=Math.abs(bladSieci8);
+    	bledySieci[0]=Math.abs(bladSieciO);
+    	bledySieci[1]=Math.abs(bladSieciD);
+    	bledySieci[2]=Math.abs(bladSieciM);
     	
     	return bledySieci;
 	}

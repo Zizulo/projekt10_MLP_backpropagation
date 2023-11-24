@@ -19,7 +19,7 @@ public class Neuron {
 		Random r=new Random();
 		for(int i=0;i<=liczba_wejsc;i++)
 			//wagi[i]=(r.nextDouble()-0.5)*2.0*10;//do ogladania
-			wagi[i]=(r.nextDouble()-0.5)*2.0*0.01;//do projektu
+			wagi[i]=(r.nextDouble()-0.5)*2.0*0.001;//do projektu
 	}
 	public double oblicz_wyjscie(double [] wejscia){
 		double fi=wagi[0];

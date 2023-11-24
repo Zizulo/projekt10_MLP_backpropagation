@@ -1,4 +1,3 @@
-
 public class Warstwa {
 	Neuron [] neurony;
 	int liczba_neuronow;
