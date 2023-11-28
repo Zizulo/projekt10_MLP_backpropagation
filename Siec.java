@@ -23,7 +23,7 @@ public class Siec {
 	{
 		double [] wejscie;
     	double [] wynik;
-    	double [] bledySieci = new double [3];
+    	double [] errorNetwork = new double [3];
     	wejscie = new double[dane_wejsciowe.size()];
     	for(int i=0; i<dane_wejsciowe.size(); i++)
     	{
@@ -32,28 +32,28 @@ public class Siec {
 		
     	wynik = oblicz_wyjscie(wejscie);
     	
-    	double bladSieciO =  ((output == 1? 1:0)-wynik[0]);
-    	double bladSieciD =  ((output == 2? 1:0)-wynik[1]);
-    	double bladSieciM =  ((output == 3? 1:0)-wynik[2]);
+    	double eNO =  ((output == 1? 1:0)-wynik[0]);
+    	double eND =  ((output == 2? 1:0)-wynik[1]);
+    	double eNM =  ((output == 3? 1:0)-wynik[2]);
    
     	for(int i=warstwy.length-1; i>=0; i--)
     	{
     	
     		if(i==warstwy.length-1)
     		{
-    			warstwy[i].neurony[0].blad=bladSieciO;
-    			warstwy[i].neurony[1].blad=bladSieciD;
-    			warstwy[i].neurony[2].blad=bladSieciM;
+    			warstwy[i].neurony[0].blad=eNO;
+    			warstwy[i].neurony[1].blad=eND;
+    			warstwy[i].neurony[2].blad=eNM;
     		}
     		else
     		{
-    			Neuron ostatniNeuronWyjsciowyO = warstwy[liczba_warstw-1].neurony[0];
-    			Neuron ostatniNeuronWyjsciowyD = warstwy[liczba_warstw-1].neurony[1];
-    			Neuron ostatniNeuronWyjsciowyM = warstwy[liczba_warstw-1].neurony[2];
+    			Neuron lNOutputO = warstwy[liczba_warstw-1].neurony[0];
+    			Neuron lNOutputD = warstwy[liczba_warstw-1].neurony[1];
+    			Neuron lNOutputM = warstwy[liczba_warstw-1].neurony[2];
     			for(int j=0; j<warstwy[i].liczba_neuronow; j++)
     			{
     				Neuron neuron = warstwy[i].neurony[j];
-    				neuron.blad=(bladSieciO*ostatniNeuronWyjsciowyO.wagi[j])+(bladSieciD*ostatniNeuronWyjsciowyD.wagi[j])+(bladSieciM*ostatniNeuronWyjsciowyM.wagi[j]);
+    				neuron.blad=(eNO*lNOutputO.wagi[j])+(eND*lNOutputD.wagi[j])+(eNM*lNOutputM.wagi[j]);
     			}
     		}
     	}
@@ -82,10 +82,10 @@ public class Siec {
     			}
     		}
     	}
-    	bledySieci[0]=Math.abs(bladSieciO);
-    	bledySieci[1]=Math.abs(bladSieciD);
-    	bledySieci[2]=Math.abs(bladSieciM);
+    	errorNetwork[0]=Math.abs(eNO);
+    	errorNetwork[1]=Math.abs(eND);
+    	errorNetwork[2]=Math.abs(eNM);
     	
-    	return bledySieci;
+    	return errorNetwork;
 	}
 }

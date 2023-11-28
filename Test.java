@@ -25,7 +25,7 @@ public class Test extends JFrame{
     Neuron neurony;
 	boolean[][] grid = new boolean[8][8];
     String selectedLetter;
-    int count = 200;
+    int count = 500;
     private ButtonGroup letterGroup = new ButtonGroup();
     private JRadioButton oButton;
     private JRadioButton dButton;
@@ -164,7 +164,7 @@ public class Test extends JFrame{
                 selectedLetter = "3";
             }
         });
-    
+  
         letterGroup.add(oButton);
         letterGroup.add(dButton);
         letterGroup.add(mButton);
@@ -178,6 +178,7 @@ public class Test extends JFrame{
             @Override
             public void actionPerformed(ActionEvent e) {
                 komponent.clearGrid();
+                resetRecognitionState();
             }
         });
 
@@ -196,8 +197,6 @@ public class Test extends JFrame{
                 zapiszDoPliku("uczaceWartosci.txt");
             }
         });
-    
-                                                            /// TRENOWANIE ///
 
         JButton trainButton = new JButton("Ucz");
         trainButton.addActionListener(new ActionListener() {
@@ -206,43 +205,12 @@ public class Test extends JFrame{
                 train(count);
             }
         });
-
-                                                            /// TESTOWANIE ///
     
         JButton testButton = new JButton("Test");
         testButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                convertGridToBinaryString();
-                String binaryString = convertGridToBinaryString();
-                boolean outputIsMatching = false;
-
-                String[] forbiddenBinaryStrings = {
-                    // dla litery "D"
-                    "0001100000100100010000101000000101000001001000100001010000001000",
-                    "0001000000101000010001001000001010000001010000100010010000011000",
-                    "0000100000010100001000100100000110000001010000100010010000011000",
-                    "0001100000100100010000101000000110000010010001000010100000010000",
-                    //dla litery "M"
-                    "1000000110000001100000011000000110011001101001011100001110000001",
-                    "0001000000100000010000001000000011110001000100100001010000011000",
-                    "0001100000101000010010001000111100000001000000100000010000001000",
-                    "1111111101000000001000000001000000010000001000000100000011111111",
-                    "1111111100000010000001000000100000001000000001000000001011111111"
-                };
-
-                for (String forbiddenString : forbiddenBinaryStrings) {
-                    if (binaryString.equals(forbiddenString)) {
-                        outputIsMatching = true;
-                        break;
-                    }
-                }
-
-                if (outputIsMatching) {
-                    JOptionPane.showMessageDialog(Test.this, "Output jest równy jednemu z niedozwolonych ciągów binarnych.", "Błąd testowania", JOptionPane.ERROR_MESSAGE);
-                } else {
-                    test();
-                }
+                test(); 
             }
         });
 
@@ -281,8 +249,6 @@ public class Test extends JFrame{
         controlJPanel.add(whiteLabel1);
         controlJPanel.add(whiteLabel2);
 
-                                                    /// ROZPOZNAWANIE ///
-
         JButton recognizeButton = new JButton("Rozpoznaj");
         recognizeButton.addActionListener(new ActionListener() {
             @Override
@@ -298,15 +264,13 @@ public class Test extends JFrame{
         return controlJPanel;
     }
 
-                                                    /// TRENOWANIE ///
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~ TRENOWANIE ~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
     public void train(int count) {
-		double oczekiwanaSkutecznosc=90;
-		double sumaBledow=100;
-		double najmniejszyBlad = sumaBledow;
-		double najwiekszSkutecznosc=0;
-		int j = 0;
-		double[] wyniki = new double[3];
+		double eE=85;
+		double sE=100;
+		double bE = sE;
+		double mE=0;
 
         if (uczaceWartosci.isEmpty()) {
             JOptionPane.showMessageDialog(Test.this, "Brak ciągów uczących. Dodaj co najmniej jeden ciąg uczący przed trenowaniem.", "Brak danych uczących", JOptionPane.WARNING_MESSAGE);
@@ -315,32 +279,28 @@ public class Test extends JFrame{
 
         Collections.shuffle(uczaceWartosci);
         
-        while(najwiekszSkutecznosc < oczekiwanaSkutecznosc){
+        while(mE < eE){
 
             for(int i=0; i<count; i++)
             {
-                sumaBledow=0;
+                sE=0;
                 for(UczacaWartosc uczacaWartosc : uczaceWartosci)
                 {
                     ArrayList<Double> input = uczacaWartosc.getInputExamples();
                     int oneHot = uczacaWartosc.getOneHot();
                     double [] wynik=siec.trenuj(input, oneHot);
-                    sumaBledow+=wynik[0];
-					sumaBledow+=wynik[1];
-					sumaBledow+=wynik[2];
-                    wyniki = wynik;
+                    sE+=wynik[0];
+					sE+=wynik[1];
+					sE+=wynik[2];
                 } 
-				najmniejszyBlad = (sumaBledow<najmniejszyBlad)? sumaBledow:najmniejszyBlad;
-				najwiekszSkutecznosc=(100-(najmniejszyBlad/uczaceWartosci.size())*100);
-					if(najwiekszSkutecznosc>oczekiwanaSkutecznosc)
+				bE = (sE<bE)? sE:bE;
+				mE=(100-(bE/uczaceWartosci.size())*100);
+					if(mE>eE)
 						break;     
             }
-            j++;
-    
-            System.out.println("P�tla: " + j + "   " + sumaBledow + "  (" + String.valueOf(najmniejszyBlad)+")" + " Najwieksza skutecznosc: " + najwiekszSkutecznosc);
 
-            if(najwiekszSkutecznosc>oczekiwanaSkutecznosc){
-                System.out.println(j + " : " + wyniki[0] + ":" + wyniki[1] + ":" + wyniki[2]);
+            if(mE>eE){
+                System.out.println("Koniec uczenia");
                 break;
             }
 			int [] tab=new int [2];
@@ -350,7 +310,7 @@ public class Test extends JFrame{
 
     }
 
-                                                    /// TESTOWANIE ///
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~ TESTOWANIE ~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
     public void test() {
 
@@ -376,7 +336,7 @@ public class Test extends JFrame{
         }
     }
 
-                                                /// ROZPOZNAWANIE ///
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~ ROZPOZNAWANIE ~~~~~~~~~~~~~~~~~~~~~~~~~~//                                                  
 
     public void recognize(){
         double[] wejscie;
@@ -422,17 +382,9 @@ public class Test extends JFrame{
 
         whiteLabel1.repaint();
         whiteLabel2.repaint();
-
-    	String st = ((wynik[0]>0.75 && wynik[0] > wynik[1] && wynik[0] > wynik[2])? "TO ZNAK O":"TO NIE ZNAK O") + "\nWynik: " + String.valueOf(wynik[0]) +
-    			"\n" + ((wynik[1]>0.75 && wynik[1] > wynik[0] && wynik[1] > wynik[2])? "TO ZNAK D":"TO NIE ZNAK D") + "\nWynik: " + String.valueOf(wynik[1]) +
-    			"\n" + ((wynik[2]>0.75 && wynik[2] > wynik[0] && wynik[2] > wynik[1])? "TO ZNAK M":"TO NIE ZNAK M") + "\nWynik: " + String.valueOf(wynik[2]);
-    	JOptionPane.showMessageDialog(null, st);
-
-        resetRecognitionState();
     }
    
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~ METODY ~~~~~~~~~~~~~~~~~~~~~~~~~~//
-
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~ RESZTA METOD ~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
     private void dodajCiag() {
         String wybranaLitera = setSelectedLetterFromRadioButton();
